@@ -1,0 +1,6 @@
+apiVersion: database.microsoft.com/v1alpha1
+kind: MsSql
+metadata:
+  name: mssql-sample
+spec:
+  count: 1
