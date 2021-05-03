@@ -36,11 +36,35 @@ spec:
           spec:
             description: MsSqlSpec defines the desired state of MsSql
             properties:
-              count:
+              eula:
+                description: 'Set the ACCEPT_EULA variable to any value to confirm your acceptance of the SQL Server
+                  EULA, please refer environment variable for more details.'
+                type: boolean
+              hostname:
+                description: 'The name that you would like to see when you run the select @@servername for the SQL
+                  instance running inside the container.'
+                type: string
+              replicas:
+                description: ''
                 format: int32
                 type: integer
+              sqlagent:
+                description: 'Enable SQL Server Agent. For example, true is enabled and false is disabled. By default,
+                  agent is disabled. please refer environment variable for more details.'
+                type: boolean
+              sqlpassword:
+                description: 'Configure the sa user password'
+                type: string
+              sqlserveredition:
+                description: 'Set the SQL Server edition or product key.'
+                type: string
             required:
-            - count
+            - eula
+            - hostname
+            - replicas
+            - sqlagent
+            - sqlpassword
+            - sqlserveredition
             type: object
           status:
             description: MsSqlStatus defines the observed state of MsSql
