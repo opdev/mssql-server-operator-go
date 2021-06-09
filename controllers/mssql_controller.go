@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,7 +40,7 @@ type MsSqlReconciler struct {
 //+kubebuilder:rbac:groups=database.microsoft.com,resources=mssqls,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=database.microsoft.com,resources=mssqls/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=database.microsoft.com,resources=mssqls/finalizers,verbs=update
-//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -51,9 +53,27 @@ type MsSqlReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
 func (r *MsSqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = r.Log.WithValues("mssql", req.NamespacedName)
+	log := r.Log.WithValues("mssql", req.NamespacedName)
 
-	// your logic here
+	mssql := &databasev1alpha1.MsSql{}
+
+	if err := r.Get(ctx, req.NamespacedName, mssql); err != nil {
+		if errors.IsNotFound(err) {
+			log.Info("MsSql resource not found. Ignoring...")
+			return ctrl.Result{}, nil
+		}
+
+		log.Error(err, "Failed to get MsSql")
+		return ctrl.Result{}, err
+	}
+
+	mssqlStatefulSet := &appsv1.StatefulSet{}
+	if err := r.Get(ctx,
+		types.NamespacedName{Name: mssql.Name, Namespace: mssql.Namespace},
+		mssqlStatefulSet)
+	err != nil && errors.IsNotFound(err) {
+
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -62,6 +82,6 @@ func (r *MsSqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 func (r *MsSqlReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&databasev1alpha1.MsSql{}).
-		Owns(&appsv1.Deployment{}).
+		Owns(&appsv1.StatefulSet{}).
 		Complete(r)
 }

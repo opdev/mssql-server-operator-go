@@ -1,3 +1,9 @@
+bin
+bin/
+bin/*
+tmp
+tmp/
+tmp/*
 
 # Binaries for programs and plugins
 *.exe
@@ -25,4 +31,8 @@ testbin/*
 *~
 
 .idea
+.idea/
 .idea/*
+.dev
+.dev/
+.dev/*

@@ -23,12 +23,12 @@ import (
 
 // MsSqlSpec defines the desired state of MsSql
 type MsSqlSpec struct {
-	Replicas int32 `json:"replicas"`
-	Eula bool `json:"eula"`
-	Hostname string `json:"hostname"`
-	SqlAgentEnabled bool `json:"sqlagent"`
+	Replicas         int32  `json:"replicas"`
+	Eula             bool   `json:"eula"`
+	Hostname         string `json:"hostname"`
+	SqlAgentEnabled  bool   `json:"sqlagent"`
 	SqlServerEdition string `json:"sqlserveredition"`
-	SqlPassword string `json:"sqlpassword"`
+	SqlPassword      string `json:"sqlpassword"`
 }
 
 // MsSqlStatus defines the observed state of MsSql
@@ -41,12 +41,12 @@ type MsSqlStatus struct {
 type MsSqlConditionType string
 
 type MsSqlCondition struct {
-	Type MsSqlConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=MsSqlConditionType"`
-	Status corev1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
-	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
-	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,7,opt,name=lastTransitionTime"`
-	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
-	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
+	Type               MsSqlConditionType     `json:"type" protobuf:"bytes,1,opt,name=type,casttype=MsSqlConditionType"`
+	Status             corev1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	LastUpdateTime     metav1.Time            `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
+	LastTransitionTime metav1.Time            `json:"lastTransitionTime,omitempty" protobuf:"bytes,7,opt,name=lastTransitionTime"`
+	Reason             string                 `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
+	Message            string                 `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
 //+kubebuilder:object:root=true

@@ -3,4 +3,9 @@ kind: MsSql
 metadata:
   name: mssql-sample
 spec:
-  count: 1
+  eula: true
+  hostname: "mssql"
+  replicas: 1
+  sqlagent: true
+  sqlpassword: "Toughpass1!"
+  sqlserveredition: "Developer"
