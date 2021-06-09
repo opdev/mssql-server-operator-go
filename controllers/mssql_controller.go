@@ -53,17 +53,17 @@ type MsSqlReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
 func (r *MsSqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("mssql", req.NamespacedName)
+	logv := r.Log.WithValues("mssql", req.NamespacedName)
 
 	mssql := &databasev1alpha1.MsSql{}
 
 	if err := r.Get(ctx, req.NamespacedName, mssql); err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("MsSql resource not found. Ignoring...")
+			logv.Info("MsSql resource not found. Ignoring...")
 			return ctrl.Result{}, nil
 		}
 
-		log.Error(err, "Failed to get MsSql")
+		logv.Error(err, "Failed to get MsSql")
 		return ctrl.Result{}, err
 	}
 
