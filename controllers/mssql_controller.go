@@ -19,7 +19,10 @@ package controllers
 import (
 	"context"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/go-logr/logr"
@@ -71,11 +74,106 @@ func (r *MsSqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if err := r.Get(ctx,
 		types.NamespacedName{Name: mssql.Name, Namespace: mssql.Namespace},
 		mssqlStatefulSet)
-	err != nil && errors.IsNotFound(err) {
+		err != nil && errors.IsNotFound(err) {
 
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *MsSqlReconciler) createMsSqlStatefulSet(mssql *databasev1alpha1.MsSql) *appsv1.StatefulSet {
+	_labels := make(map[string]string)
+	_replicas := mssql.Spec.Replicas
+	var _mssqlFsGroup int64 = 10001
+	var _containerPort int32 = 1433
+	_mssqlPodSpec := corev1.PodSpec{
+		Volumes: []corev1.Volume{
+			{
+				Name: "mssql-config-volume",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{Name: "mssql"},
+					},
+				},
+			},
+		},
+		Containers: []corev1.Container{
+			{
+				Name: "mssqlserver",
+				Command: []string{"/bin/bash", "-c",
+					"cp /var/opt/config/mssql.conf /var/opt/mssql/mssql.conf && /opt/mssql/bin/sqlserver"},
+				Image: "mcr.microsoft.com/mssql/server:2019-latest",
+				ImagePullPolicy: "IfNotPresent",
+				Ports: []corev1.ContainerPort{
+					{
+						ContainerPort: _containerPort,
+					},
+				},
+				Env: []corev1.EnvVar{
+					{Name: "MSSQL_PID", Value: "Developer"},
+					{Name: "ACCEPT_EULA", Value: "Y"},
+					{Name: "MSSQL_AGENT_ENABLED", Value: "false"},
+					{
+						Name: "SA_PASSWORD",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "mssql"},
+								Key: "SA_PASSWORD",
+							},
+						},
+					},
+				},
+				VolumeMounts: []corev1.VolumeMount{
+					{Name: mssql.Name, MountPath: "/var/opt/mssql"},
+					{Name: "mssql-config-volume", MountPath: "/var/opt/config"},
+				},
+			},
+		},
+		SecurityContext: &corev1.PodSecurityContext{
+			FSGroup:             &_mssqlFsGroup,
+		},
+	}
+	_pvsize := resource.MustParse("8Gi")
+	_pvclaim := corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: mssql.Name,
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{
+					"ReadWriteOnce",
+				},
+				Resources: corev1.ResourceRequirements{
+					Requests: map[corev1.ResourceName]resource.Quantity{
+						"storage": _pvsize,
+					},
+				},
+			},
+		}
+
+	ss := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mssql.Name,
+			Namespace: mssql.Namespace,
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: &_replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: _labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
+				},
+				Spec: _mssqlPodSpec,
+			},
+			VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
+				_pvclaim,
+			},
+		},
+	}
+
+return ss
 }
 
 // SetupWithManager sets up the controller with the Manager.
