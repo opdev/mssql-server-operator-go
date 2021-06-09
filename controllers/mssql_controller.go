@@ -102,7 +102,7 @@ func (r *MsSqlReconciler) createMsSqlStatefulSet(mssql *databasev1alpha1.MsSql) 
 				Name: "mssqlserver",
 				Command: []string{"/bin/bash", "-c",
 					"cp /var/opt/config/mssql.conf /var/opt/mssql/mssql.conf && /opt/mssql/bin/sqlserver"},
-				Image: "mcr.microsoft.com/mssql/server:2019-latest",
+				Image:           "mcr.microsoft.com/mssql/server:2019-latest",
 				ImagePullPolicy: "IfNotPresent",
 				Ports: []corev1.ContainerPort{
 					{
@@ -118,7 +118,7 @@ func (r *MsSqlReconciler) createMsSqlStatefulSet(mssql *databasev1alpha1.MsSql) 
 						ValueFrom: &corev1.EnvVarSource{
 							SecretKeyRef: &corev1.SecretKeySelector{
 								LocalObjectReference: corev1.LocalObjectReference{Name: "mssql"},
-								Key: "SA_PASSWORD",
+								Key:                  "SA_PASSWORD",
 							},
 						},
 					},
@@ -130,25 +130,25 @@ func (r *MsSqlReconciler) createMsSqlStatefulSet(mssql *databasev1alpha1.MsSql) 
 			},
 		},
 		SecurityContext: &corev1.PodSecurityContext{
-			FSGroup:             &_mssqlFsGroup,
+			FSGroup: &_mssqlFsGroup,
 		},
 	}
 	_pvsize := resource.MustParse("8Gi")
 	_pvclaim := corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: mssql.Name,
+		ObjectMeta: metav1.ObjectMeta{
+			Name: mssql.Name,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				"ReadWriteOnce",
 			},
-			Spec: corev1.PersistentVolumeClaimSpec{
-				AccessModes: []corev1.PersistentVolumeAccessMode{
-					"ReadWriteOnce",
-				},
-				Resources: corev1.ResourceRequirements{
-					Requests: map[corev1.ResourceName]resource.Quantity{
-						"storage": _pvsize,
-					},
+			Resources: corev1.ResourceRequirements{
+				Requests: map[corev1.ResourceName]resource.Quantity{
+					"storage": _pvsize,
 				},
 			},
-		}
+		},
+	}
 
 	ss := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -173,7 +173,7 @@ func (r *MsSqlReconciler) createMsSqlStatefulSet(mssql *databasev1alpha1.MsSql) 
 		},
 	}
 
-return ss
+	return ss
 }
 
 // SetupWithManager sets up the controller with the Manager.
