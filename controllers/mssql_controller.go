@@ -71,21 +71,53 @@ func (r *MsSqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	mssqlStatefulSet := &appsv1.StatefulSet{}
-	if err := r.Get(ctx,
-		types.NamespacedName{Name: mssql.Name, Namespace: mssql.Namespace},
-		mssqlStatefulSet)
-		err != nil && errors.IsNotFound(err) {
-
+	err := r.Get(ctx, types.NamespacedName{Name: mssql.Name, Namespace: mssql.Namespace}, mssqlStatefulSet)
+	if err != nil && errors.IsNotFound(err) {
+		ss := r.statefulSetForMsSql(mssql)
+		if err = r.Create(ctx, ss); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		logv.Error(err, "Failed to get StatefulSet")
+		return ctrl.Result{}, err
 	}
+
+	_replicas := mssql.Spec.Replicas
+	if *mssqlStatefulSet.Spec.Replicas != _replicas {
+		mssqlStatefulSet.Spec.Replicas = &_replicas
+		err = r.Update(ctx, mssqlStatefulSet); if err != nil {
+			logv.Error(err, "Failed to update StatefulSet", "StatefulSet.Namespace", mssqlStatefulSet.Namespace, "StatefulSet.Name", mssqlStatefulSet.Name)
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	_mssqlStatefulSetPods := &corev1.PodList{}
+	_opts := []client.ListOption{
+		client.InNamespace(mssql.Namespace),
+		client.MatchingLabels{"app": "mssql", "mssql": mssql.Name},
+	}
+
+	if err = r.List(ctx, _mssqlStatefulSetPods, _opts...); err != nil {
+		logv.Error(err, "Failed to list pods", "MsSql.Namespace", mssql.Namespace, "MsSql.Name", mssql.Name)
+		return ctrl.Result{}, err
+	}
+
+	//_mssqlStatefulSetPodNames := getPodNames(_mssqlStatefulSetPods.Items)
+	_ = getPodNames(_mssqlStatefulSetPods.Items)
 
 	return ctrl.Result{}, nil
 }
 
-func (r *MsSqlReconciler) createMsSqlStatefulSet(mssql *databasev1alpha1.MsSql) *appsv1.StatefulSet {
+// StatefulSetForMsSql creates a statefulset for mssql custom resource when one is not available
+func (r *MsSqlReconciler) statefulSetForMsSql(mssql *databasev1alpha1.MsSql) *appsv1.StatefulSet {
 	_labels := make(map[string]string)
 	_replicas := mssql.Spec.Replicas
 	var _mssqlFsGroup int64 = 10001
 	var _containerPort int32 = 1433
+
+	// mssqlserver pod specification
 	_mssqlPodSpec := corev1.PodSpec{
 		Volumes: []corev1.Volume{
 			{
@@ -133,6 +165,8 @@ func (r *MsSqlReconciler) createMsSqlStatefulSet(mssql *databasev1alpha1.MsSql) 
 			FSGroup: &_mssqlFsGroup,
 		},
 	}
+
+	// storage for mssqlserver pod
 	_pvsize := resource.MustParse("8Gi")
 	_pvclaim := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -150,6 +184,7 @@ func (r *MsSqlReconciler) createMsSqlStatefulSet(mssql *databasev1alpha1.MsSql) 
 		},
 	}
 
+	// statefulset for mssqlserver operand
 	ss := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      mssql.Name,
@@ -174,6 +209,14 @@ func (r *MsSqlReconciler) createMsSqlStatefulSet(mssql *databasev1alpha1.MsSql) 
 	}
 
 	return ss
+}
+
+func getPodNames(pods []corev1.Pod) []string {
+	var podNames []string
+	for _, pod := range pods {
+		podNames = append(podNames, pod.Name)
+	}
+	return podNames
 }
 
 // SetupWithManager sets up the controller with the Manager.
