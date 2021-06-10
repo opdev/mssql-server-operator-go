@@ -86,7 +86,8 @@ func (r *MsSqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	_replicas := mssql.Spec.Replicas
 	if *mssqlStatefulSet.Spec.Replicas != _replicas {
 		mssqlStatefulSet.Spec.Replicas = &_replicas
-		err = r.Update(ctx, mssqlStatefulSet); if err != nil {
+		err = r.Update(ctx, mssqlStatefulSet)
+		if err != nil {
 			logv.Error(err, "Failed to update StatefulSet", "StatefulSet.Namespace", mssqlStatefulSet.Namespace, "StatefulSet.Name", mssqlStatefulSet.Name)
 			return ctrl.Result{}, err
 		}
@@ -112,7 +113,7 @@ func (r *MsSqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // StatefulSetForMsSql creates a statefulset for mssql custom resource when one is not available
 func (r *MsSqlReconciler) statefulSetForMsSql(mssql *databasev1alpha1.MsSql) *appsv1.StatefulSet {
-	_labels := make(map[string]string)
+	_labels := map[string]string{"app": "mssql", "mssql": mssql.Name}
 	_replicas := mssql.Spec.Replicas
 	var _mssqlFsGroup int64 = 10001
 	var _containerPort int32 = 1433
@@ -133,7 +134,7 @@ func (r *MsSqlReconciler) statefulSetForMsSql(mssql *databasev1alpha1.MsSql) *ap
 			{
 				Name: "mssqlserver",
 				Command: []string{"/bin/bash", "-c",
-					"cp /var/opt/config/mssql.conf /var/opt/mssql/mssql.conf && /opt/mssql/bin/sqlserver"},
+					"cp /var/opt/config/mssql.conf /var/opt/mssql/mssql.conf && /opt/mssql/bin/sqlservr"},
 				Image:           "mcr.microsoft.com/mssql/server:2019-latest",
 				ImagePullPolicy: "IfNotPresent",
 				Ports: []corev1.ContainerPort{
@@ -197,8 +198,7 @@ func (r *MsSqlReconciler) statefulSetForMsSql(mssql *databasev1alpha1.MsSql) *ap
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{},
-					Labels:      map[string]string{},
+					Labels: _labels,
 				},
 				Spec: _mssqlPodSpec,
 			},

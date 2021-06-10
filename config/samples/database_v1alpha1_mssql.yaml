@@ -7,5 +7,6 @@ spec:
   hostname: "mssql"
   replicas: 1
   sqlagent: true
-  sqlpassword: "Toughpass1!"
+  sqlpassword: mssql
   sqlserveredition: "Developer"
+  mssqlconf: mssql
