@@ -3,6 +3,8 @@ This operator is currently in development and using [existing helm chart](https:
 
 ## Installation
 
+In order to get this working currently you have to install the configmap, secret, service account, and role binding in the config/samples directory. Once installed the operator can run which will create a statefulset that will deploy successfully with the previously mentioned manifests deployed. Namespace/project mssql was used.
+
 ### OpenShift
 
 ### Kubernetes + OLM
